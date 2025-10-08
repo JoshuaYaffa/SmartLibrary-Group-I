@@ -1,0 +1,10 @@
+Repository URL: https://github.com/JoshuaYaffa/SmartLibrary-Group-I.git
+Tag Name: week4-submission
+Submitted Files:
+- operations.py
+- tests.py
+- demo.py
+- README.md
+- UML.pdf
+- DesignRationale.pdf
+- submission.txt 
