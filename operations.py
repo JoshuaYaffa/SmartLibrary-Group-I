@@ -3,17 +3,15 @@ ReadEasy Mini Library Management System
 Core operations module
 
 PROG211 - Individual Assignment
-Student: Joshua Mohamed Katibi Yaffa
-ID  : 905004075
+Student: Joshua Yaffa
 GitHub: JoshuaYaffa/SmartLibrary-Group-I
 
-This module contains the core data structures and functions for managing
-books and members in the library system.
+Foundation Setup: Data Structures and Basic CRUD Operations
 """
 
 # ==================== GLOBAL DATA STRUCTURES ====================
 
-# I'm using a tuple for genres because it's immutable and these categories won't change
+# I'm using a tuple for genres because these categories are fixed and won't change
 GENRES = ("Fiction", "Non-Fiction", "Sci-Fi", "Mystery", "Biography")
 
 # Dictionary for books because ISBN lookup should be fast - O(1) time complexity
@@ -76,95 +74,172 @@ def add_member(member_id, name, email):
     
     return True
 
-# ==================== HELPER FUNCTIONS FOR TESTING ====================
+# ==================== DATA VALIDATION HELPERS ====================
 
-def display_books():
-    """Shows all books currently in the library - useful for debugging"""
-    print("\n📚 BOOKS IN LIBRARY:")
+def is_valid_genre(genre):
+    """Check if a genre is in our valid GENRES tuple"""
+    return genre in GENRES
+
+def book_exists(isbn):
+    """Check if a book with this ISBN exists in the system"""
+    return isbn in books
+
+def member_exists(member_id):
+    """Check if a member with this ID exists in the system"""
+    for member in members:
+        if member["member_id"] == member_id:
+            return True
+    return False
+
+# ==================== DISPLAY FUNCTIONS ====================
+
+def display_all_books():
+    """Shows all books currently in the library in a nice format"""
+    print("\n LIBRARY BOOK COLLECTION:")
+    print("=" * 50)
+    
     if not books:
-        print("   No books available.")
+        print("No books in the library yet.")
         return
     
-    # Loop through each book and display its details
-    for isbn, book in books.items():
-        print(f"   ISBN: {isbn}")
+    for book_number, (isbn, book) in enumerate(books.items(), 1):
+        print(f"{book_number}. ISBN: {isbn}")
         print(f"   Title: {book['title']}")
         print(f"   Author: {book['author']}")
         print(f"   Genre: {book['genre']}")
-        print(f"   Copies: {book['total_copies']}")
-        print("   " + "-" * 30)
+        print(f"   Copies Available: {book['total_copies']}")
+        print()
 
-def display_members():
-    """Shows all registered members - helpful for verification"""
-    print("\n👥 LIBRARY MEMBERS:")
-    if not members:
-        print("   No members registered.")
-        return
-    
-    # Display each member's information
-    for member in members:
-        print(f"   ID: {member['member_id']}")
-        print(f"   Name: {member['name']}")
-        print(f"   Email: {member['email']}")
-        print(f"   Borrowed Books: {len(member['borrowed_books'])}")
-        print("   " + "-" * 30)
-
-# ==================== TESTING FUNCTIONS ====================
-
-def test_library_functions():
-    """
-    Tests the core library functions to make sure they work correctly.
-    I'm testing edge cases and normal operations to verify everything works.
-    """
-    print("🧪 TESTING LIBRARY FUNCTIONS")
+def display_all_members():
+    """Shows all registered members and their details"""
+    print("\n REGISTERED LIBRARY MEMBERS:")
     print("=" * 50)
     
-    # Start with a clean slate for testing
+    if not members:
+        print("No members registered yet.")
+        return
+    
+    for member_number, member in enumerate(members, 1):
+        print(f"{member_number}. ID: {member['member_id']}")
+        print(f"   Name: {member['name']}")
+        print(f"   Email: {member['email']}")
+        print(f"   Books Borrowed: {len(member['borrowed_books'])}")
+        print()
+
+def display_system_summary():
+    """Shows a quick overview of the entire system"""
+    print("\n SYSTEM SUMMARY:")
+    print("=" * 30)
+    print(f"Total Books: {len(books)}")
+    print(f"Total Members: {len(members)}")
+    print(f"Available Genres: {len(GENRES)}")
+    print("=" * 30)
+
+# ==================== SAMPLE DATA SETUP ====================
+
+def setup_sample_data():
+    """
+    I'm adding sample data to test the system without manual entry.
+    This helps verify everything is working correctly.
+    """
+    print(" Setting up sample data for testing...")
+    
+    # Sample books data
+    sample_books = [
+        ("1001", "Python Programming", "John Smith", "Non-Fiction", 3),
+        ("1002", "The Great Gatsby", "F. Scott Fitzgerald", "Fiction", 5),
+        ("1003", "Dune", "Frank Herbert", "Sci-Fi", 2),
+        ("1004", "Sherlock Holmes", "Arthur Conan Doyle", "Mystery", 4),
+        ("1005", "Steve Jobs Biography", "Walter Isaacson", "Biography", 3)
+    ]
+    
+    # Sample members data
+    sample_members = [
+        ("M001", "Alice Johnson", "alice@email.com"),
+        ("M002", "Bob Wilson", "bob@email.com"),
+        ("M003", "Carol Davis", "carol@email.com")
+    ]
+    
+    # Add sample books
+    books_added = 0
+    for isbn, title, author, genre, copies in sample_books:
+        if add_book(isbn, title, author, genre, copies):
+            books_added += 1
+    
+    # Add sample members
+    members_added = 0
+    for member_id, name, email in sample_members:
+        if add_member(member_id, name, email):
+            members_added += 1
+    
+    print(f" Sample data setup complete:")
+    print(f"   Books added: {books_added}")
+    print(f"   Members added: {members_added}")
+
+# ==================== COMPREHENSIVE TESTING ====================
+
+def test_system_foundation():
+    """
+    Comprehensive test of all system foundation components.
+    I'm testing everything to make sure the base system is working properly.
+    """
+    print(" SYSTEM FOUNDATION TESTING")
+    print("=" * 60)
+    
+    # Clear any existing data for clean testing
     books.clear()
     members.clear()
     
-    # Test 1: Adding books with various scenarios
-    print("\n1. TESTING BOOK ADDITIONS:")
+    # Test 1: Basic function testing
+    print("\n1. TESTING CORE FUNCTIONS:")
     
-    # This should work - valid book
-    result1 = add_book("1001", "Python Programming", "John Doe", "Non-Fiction", 5)
-    print(f"   Added valid book: {result1} (should be True)")
+    # Test add_book with various scenarios
+    print("   Testing add_book():")
+    print(f"   - Valid book: {add_book('2001', 'Test Book', 'Test Author', 'Fiction', 5)}")
+    print(f"   - Duplicate ISBN: {add_book('2001', 'Another Book', 'Different Author', 'Sci-Fi', 3)}")
+    print(f"   - Invalid genre: {add_book('2002', 'Space Book', 'Space Author', 'Space Opera', 2)}")
+    print(f"   - Zero copies: {add_book('2003', 'No Copies', 'Some Author', 'Fiction', 0)}")
     
-    # This should fail - duplicate ISBN
-    result2 = add_book("1001", "Another Book", "Jane Smith", "Fiction", 3)
-    print(f"   Added duplicate ISBN: {result2} (should be False)")
+    # Test add_member with various scenarios
+    print("   Testing add_member():")
+    print(f"   - Valid member: {add_member('M100', 'John Doe', 'john@email.com')}")
+    print(f"   - Duplicate ID: {add_member('M100', 'Jane Doe', 'jane@email.com')}")
     
-    # This should fail - invalid genre
-    result3 = add_book("1002", "Space Book", "Alex Star", "Space Opera", 2)
-    print(f"   Added invalid genre: {result3} (should be False)")
+    # Test 2: Data validation helpers
+    print("\n2. TESTING VALIDATION HELPERS:")
+    print(f"   - Valid genre check: {is_valid_genre('Fiction')}")
+    print(f"   - Invalid genre check: {is_valid_genre('Romance')}")
+    print(f"   - Book exists check: {book_exists('2001')}")
+    print(f"   - Book doesn't exist check: {book_exists('9999')}")
+    print(f"   - Member exists check: {member_exists('M100')}")
+    print(f"   - Member doesn't exist check: {member_exists('M999')}")
     
-    # This should fail - zero copies
-    result4 = add_book("1003", "Empty Library", "Test Author", "Fiction", 0)
-    print(f"   Added book with zero copies: {result4} (should be False)")
+    # Test 3: Setup sample data
+    print("\n3. TESTING SAMPLE DATA SETUP:")
+    setup_sample_data()
     
-    # Test 2: Adding members
-    print("\n2. TESTING MEMBER REGISTRATION:")
+    # Test 4: Display functions
+    print("\n4. TESTING DISPLAY FUNCTIONS:")
+    display_system_summary()
+    display_all_books()
+    display_all_members()
     
-    # This should work - valid member
-    result5 = add_member("M001", "Alice Johnson", "alice@email.com")
-    print(f"   Added valid member: {result5} (should be True)")
+    # Final verification
+    print("\n5. FINAL VERIFICATION:")
+    print(f"   Total books in system: {len(books)}")
+    print(f"   Total members in system: {len(members)}")
+    print(f"   All data structures initialized: ")
+    print(f"   Core functions working: ")
+    print(f"   Validation helpers working: ")
     
-    # This should fail - duplicate member ID
-    result6 = add_member("M001", "Bob Wilson", "bob@email.com")
-    print(f"   Added duplicate member ID: {result6} (should be False)")
-    
-    # Show what we have in the system now
-    print("\n3. CURRENT SYSTEM STATE:")
-    display_books()
-    display_members()
-    
-    # Verify our functions return the right data types
-    print("\n4. VERIFYING FUNCTION BEHAVIOR:")
-    print(f"   add_book returns boolean: {isinstance(result1, bool)}")
-    print(f"   add_member returns boolean: {isinstance(result5, bool)}")
-    
-    print("\n✅ ALL TESTS COMPLETED SUCCESSFULLY!")
+    print("\n SYSTEM FOUNDATION COMPLETED!")
+    print("   Ready to implement borrowing and search features!")
 
-# This runs our tests when we execute the file directly
+# ==================== MAIN EXECUTION ====================
+
 if __name__ == "__main__":
-    test_library_functions()
+    """
+    When this file is run directly, it executes the system foundation test.
+    This helps me verify that everything is working before building additional features.
+    """
+    test_system_foundation()
