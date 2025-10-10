@@ -1,13 +1,18 @@
 """
 ReadEasy Mini Library Management System
-Unit Tests
+Enhanced Unit Tests
 
 PROG211 - Individual Assignment
 Student: Joshua Mohamed Katibi Yaffa
-Class : BSEM1101, Year 2 ,Semester 3
+Class : BSEM1101 Semester 3
+ID : 905004075
+ID: 905004075
+Class : BSEM1101
+Semseter: 3
+Year : 2
 GitHub: JoshuaYaffa/SmartLibrary-Group-I
 
-This file contains unit tests for all library functions using assert statements.
+This file contains comprehensive unit tests for all library functions including security features.
 """
 
 # Import all functions from our operations module
@@ -227,7 +232,7 @@ def test_edge_cases():
     
     # Test 3: Borrow when no copies available
     add_book("7002", "Single Copy Book", "Author", "Non-Fiction", 1)
-    borrow_book("7002", "M500")  # First borrow succeeds
+    borrow_book("7002", "M500")
     add_member("M600", "Another Reader", "another@email.com")
     assert borrow_book("7002", "M600") == False, "Should not borrow when no copies available"
     
@@ -277,11 +282,169 @@ def test_data_integrity():
     
     print("All data integrity tests passed!")
 
+def test_security_system():
+    """Test the security and authentication system"""
+    print("\nTESTING SECURITY SYSTEM")
+    
+    # Clear any existing sessions
+    logout()
+    
+    # Test 1: Login with valid credentials
+    print("Testing login with valid credentials:")
+    assert login("admin", "admin123") == True, "Admin should login successfully"
+    assert current_user["role"] == "admin", "Current user should have admin role"
+    
+    # Test 2: Login with invalid credentials
+    print("Testing login with invalid credentials:")
+    logout()
+    assert login("admin", "wrongpassword") == False, "Should reject wrong password"
+    assert current_user is None, "Current user should be None after failed login"
+    
+    # Test 3: Test permissions
+    print("Testing role-based permissions:")
+    login("admin", "admin123")
+    assert check_permission("add_member") == True, "Admin should have add_member permission"
+    assert check_permission("delete_book") == True, "Admin should have delete_book permission"
+    
+    logout()
+    login("librarian1", "lib123")
+    assert check_permission("add_book") == True, "Librarian should have add_book permission"
+    assert check_permission("delete_member") == False, "Librarian should NOT have delete_member permission"
+    
+    logout()
+    login("alice", "pass123")
+    assert check_permission("search_books") == True, "Member should have search_books permission"
+    assert check_permission("add_book") == False, "Member should NOT have add_book permission"
+    
+    logout()
+    print("All security tests passed!")
+
+def test_audit_trail():
+    """Test the audit trail functionality"""
+    print("\nTESTING AUDIT TRAIL FUNCTIONALITY")
+    
+    # Clear audit trail for testing
+    audit_trail["admins"].clear()
+    audit_trail["librarians"].clear()
+    audit_trail["members"].clear()
+    
+    # Test 1: Login creates audit entry
+    login("admin", "admin123")
+    assert len(audit_trail["admins"]) > 0, "Login should create audit entry"
+    
+    # Test 2: Operations create audit entries
+    initial_audit_count = len(audit_trail["admins"])
+    add_book("9001", "Audit Test Book", "Test Author", "Fiction", 3)
+    assert len(audit_trail["admins"]) > initial_audit_count, "Book addition should create audit entry"
+    
+    # Test 3: Logout creates audit entry
+    initial_audit_count = len(audit_trail["admins"])
+    logout()
+    assert len(audit_trail["admins"]) > initial_audit_count, "Logout should create audit entry"
+    
+    # Test 4: Failed login creates audit entry
+    initial_audit_count = len(audit_trail["admins"])
+    login("hacker", "wrongpassword")
+    assert len(audit_trail["admins"]) > initial_audit_count, "Failed login should create audit entry"
+    
+    print("All audit trail tests passed!")
+
+def test_persistent_storage():
+    """Test data persistence functionality"""
+    print("\nTESTING PERSISTENT STORAGE")
+    
+    # Clear data and setup test data
+    books.clear()
+    members.clear()
+    add_book("10001", "Persistent Book", "Storage Author", "Fiction", 5)
+    add_member("M900", "Persistent Member", "persistent@email.com")
+    
+    # Test 1: Save data
+    assert save_data() == True, "Should save data successfully"
+    
+    # Remember current state
+    original_book_count = len(books)
+    original_member_count = len(members)
+    
+    # Clear current data
+    books.clear()
+    members.clear()
+    
+    # Test 2: Load data
+    assert load_data() == True, "Should load data successfully"
+    assert len(books) == original_book_count, "Should restore saved books"
+    assert len(members) == original_member_count, "Should restore saved members"
+    
+    print("All persistent storage tests passed!")
+
+def test_advanced_features():
+    """Test advanced system features"""
+    print("\nTESTING ADVANCED FEATURES")
+    
+    # Setup for testing
+    login("admin", "admin123")
+    books.clear()
+    members.clear()
+    
+    # Test 1: Batch operations
+    book_list = [
+        ("B001", "Batch Book 1", "Batch Author", "Fiction", 2),
+        ("B002", "Batch Book 2", "Batch Author", "Non-Fiction", 3),
+        ("B003", "Batch Book 3", "Batch Author", "Sci-Fi", 1)
+    ]
+    
+    success_count = batch_add_books(book_list)
+    assert success_count == 3, "Should add all books in batch"
+    assert len(books) == 3, "Should have 3 books after batch operation"
+    
+    # Test 2: System health check
+    health_ok = system_health_check()
+    assert health_ok == True, "System health should be OK with valid data"
+    
+    # Test 3: Backup creation
+    backup_file = create_backup()
+    assert backup_file is not None, "Should create backup file"
+    assert "backup_library_" in backup_file, "Backup filename should follow pattern"
+    
+    # Test 4: Data export
+    export_file = export_books_to_csv()
+    assert export_file is not None, "Should create export file"
+    assert "library_books_export_" in export_file, "Export filename should follow pattern"
+    
+    logout()
+    print("All advanced features tests passed!")
+
+def test_validation_functions():
+    """Test enhanced validation functions"""
+    print("\nTESTING ENHANCED VALIDATION FUNCTIONS")
+    
+    # Test email validation
+    assert validate_email("test@example.com") == True, "Should validate correct email"
+    assert validate_email("invalid-email") == False, "Should reject invalid email"
+    assert validate_email("a@b.c") == True, "Should validate short but valid email"
+    
+    # Test ISBN validation
+    assert validate_isbn("978-0123456789") == True, "Should validate ISBN with hyphens"
+    assert validate_isbn("0123456789") == True, "Should validate 10-digit ISBN"
+    assert validate_isbn("9780123456789") == True, "Should validate 13-digit ISBN"
+    assert validate_isbn("invalid") == False, "Should reject invalid ISBN"
+    
+    # Test phone validation
+    assert validate_phone("123-456-7890") == True, "Should validate phone with hyphens"
+    assert validate_phone("(123) 456-7890") == True, "Should validate phone with parentheses"
+    assert validate_phone("1234567890") == True, "Should validate plain phone number"
+    assert validate_phone("123") == False, "Should reject too short phone number"
+    
+    print("All validation function tests passed!")
+
 def run_all_tests():
     """Run all unit tests"""
-    print("=" * 60)
-    print("RUNNING ALL UNIT TESTS")
-    print("=" * 60)
+    print("=" * 70)
+    print("RUNNING ALL ENHANCED UNIT TESTS")
+    print("=" * 70)
+    
+    # Ensure we start with no active session
+    logout()
     
     # Run all test functions
     test_add_book()
@@ -293,19 +456,31 @@ def run_all_tests():
     test_validation_helpers()
     test_edge_cases()
     test_data_integrity()
+    test_security_system()
+    test_audit_trail()
+    test_persistent_storage()
+    test_advanced_features()
+    test_validation_functions()
     
-    print("\n" + "=" * 60)
-    print("ALL UNIT TESTS PASSED SUCCESSFULLY!")
-    print("=" * 60)
+    # Final cleanup
+    logout()
+    
+    print("\n" + "=" * 70)
+    print("ALL ENHANCED UNIT TESTS PASSED SUCCESSFULLY!")
+    print("=" * 70)
     print("TEST SUMMARY:")
-    print(f"   Tested {len(books)} books in system")
-    print(f"   Tested {len(members)} members in system")
+    print(f"   Total books in system: {len(books)}")
+    print(f"   Total members in system: {len(members)}")
+    print(f"   Total audit events: {sum(len(v) for v in audit_trail.values())}")
     print("   All CRUD operations verified")
-    print("   All borrow/return functionality verified")
-    print("   All edge cases handled")
+    print("   All security features verified")
+    print("   All advanced features verified")
+    print("   All validation functions verified")
     print("   Data integrity maintained")
+    print("   Persistent storage working")
+    print("   Audit trail functioning")
     print("   All assignment requirements satisfied")
-    print("=" * 60)
+    print("=" * 70)
 
 # Run tests when file is executed directly
 if __name__ == "__main__":
