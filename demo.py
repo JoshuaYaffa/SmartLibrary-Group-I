@@ -19,7 +19,7 @@ It connects all the functions from operations.py and security.py to create
 a working system that supports authentication, user roles, and full CRUD operations.
 """
 
-from security import authenticate, logout, has_access, current_user, view_audit_log, view_error_log
+import security
 from operations import (
     add_book, search_books, update_book, delete_book,
     add_member, update_member, delete_member,
@@ -61,7 +61,11 @@ def admin_menu():
             title = input("Enter Title: ")
             author = input("Enter Author: ")
             genre = input("Enter Genre: ")
-            total_copies = int(input("Enter total copies: "))
+            try:
+                total_copies = int(input("Enter total copies: "))
+            except ValueError:
+                print("Invalid input. Total copies must be a number.")
+                continue
             if add_book(isbn, title, author, genre, total_copies):
                 print("Book added successfully.")
             else:
@@ -137,13 +141,13 @@ def admin_menu():
             system_summary()
 
         elif choice == "12":
-            view_audit_log()
+            security.view_audit_log()
 
         elif choice == "13":
-            view_error_log()
+            security.view_error_log()
 
         elif choice == "0":
-            logout()
+            security.logout()
             break
 
         else:
@@ -192,7 +196,7 @@ def staff_menu():
             system_summary()
 
         elif choice == "0":
-            logout()
+            security.logout()
             break
 
         else:
@@ -212,12 +216,12 @@ def main():
     print(" Welcome to ReadEasy Library System ")
     print("=====================================")
 
-    if not authenticate():
+    if not security.authenticate():
         return
 
-    if current_user["role"] == "admin":
+    if security.current_user["role"] == "admin":
         admin_menu()
-    elif current_user["role"] == "staff":
+    elif security.current_user["role"] == "staff":
         staff_menu()
 
     print("\nThank you for using the ReadEasy Mini Library Management System.")
