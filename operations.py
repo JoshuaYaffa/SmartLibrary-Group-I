@@ -1,350 +1,246 @@
 # ================================================
 # ReadEasy Mini Library Management System
-#
+# ================================================
 # PROG211 - Individual Assignment
 # Student: Joshua Mohamed Katibi Yaffa
 # ID: 905004075
 # Class: BSEM1101
 # Semester: 3
 # Year: 2
-#
+# ================================================
 # Core Operations Module with Enhanced Features
 #
 # GitHub: JoshuaYaffa/SmartLibrary-Group-I
 # ================================================
 
 """
-This file contains all the core operations for my Mini Library Management System.
-It handles the CRUD operations for books and members, as well as the borrow and return functions.
-I have also linked it with the security.py file for logging, auditing and tracking user actions.
-
+This file contains all the main library operations such as adding, updating,
+deleting, and searching for books and members. It also manages the borrowing
+and returning of books, along with a summary of system activity.
 """
 
-from security import log_event, current_user, log_error
-import re
+# ==============================
+# Data Structures
+# ==============================
 
-# I am using global variables to store all data in memory
-books = {}        # Dictionary for all books (key = ISBN)
-members = []      # List to hold all member information
-GENRES = ("Fiction", "Non-Fiction", "Sci-Fi", "Biography", "Children", "Academic")
+books = {}      # Stores book details (ISBN -> book info)
+members = {}    # Stores member details (ID -> member info)
 
 
 # ==============================
-# Helper Functions
-# ==============================
-
-def _is_valid_email(email):
-    """
-    This function checks if the email entered is valid.
-    I used a simple regex pattern to confirm the email structure.
-    """
-    if not isinstance(email, str):
-        return False
-    email = email.strip()
-    pattern = r"^[^@]+@[^@]+\.[^@]+$"
-    return re.match(pattern, email) is not None
-
-
-def _find_member(member_id):
-    """
-    This function searches for a member in the list using their ID.
-    It returns the member dictionary if found, otherwise None.
-    """
-    for member in members:
-        if member["member_id"] == member_id:
-            return member
-    return None
-
-
-def _is_isbn_unique(isbn):
-    """Checks that a book ISBN does not already exist."""
-    return isbn not in books
-
-
-# ==============================
-# Book Operations
+# Book Management Functions
 # ==============================
 
 def add_book(isbn, title, author, genre, total_copies):
-    """
-    Adds a new book to the system.
-    It checks if the ISBN is unique, genre is valid, and copies > 0 before adding.
-    """
-    try:
-        if not isbn or not title or not author:
-            return False
-        if not _is_isbn_unique(isbn):
-            return False
-        if genre not in GENRES:
-            return False
-        if not isinstance(total_copies, int) or total_copies <= 0:
-            return False
-        books[isbn] = {
-            "title": title.strip(),
-            "author": author.strip(),
-            "genre": genre,
-            "total_copies": total_copies
-        }
-        if current_user:
-            log_event(current_user["username"], f"Added book: {title} (ISBN: {isbn})")
-        return True
-    except Exception as e:
-        log_error(str(e))
+    """Adds a new book record into the system."""
+    if isbn in books:
         return False
+    books[isbn] = {
+        "title": title,
+        "author": author,
+        "genre": genre,
+        "total_copies": total_copies,
+        "available_copies": total_copies
+    }
+    return True
 
 
-def search_books(query, by="title"):
-    """
-    Searches for books in the system by title or author.
-    The search is case-insensitive and allows partial matches.
-    """
+def search_books(keyword):
+    """Searches for books by title, author, or genre."""
     results = []
-    if not query:
-        return results
-    q = query.strip().lower()
-    for isbn, book in books.items():
-        if by == "author":
-            if q in book["author"].lower():
-                results.append((isbn, book))
-        else:
-            if q in book["title"].lower():
-                results.append((isbn, book))
+    for book_id, book in books.items():
+        if (keyword.lower() in book["title"].lower() or
+            keyword.lower() in book["author"].lower() or
+            keyword.lower() in book["genre"].lower()):
+            results.append((book_id, book))
     return results
 
 
 def update_book(isbn, title=None, author=None, genre=None, total_copies=None):
-    """
-    Updates details of a book if it already exists.
-    I used optional parameters so that only the given fields are updated.
-    """
-    try:
-        book = books.get(isbn)
-        if not book:
-            return False
-        if genre is not None and genre not in GENRES:
-            return False
-        if total_copies is not None:
-            if not isinstance(total_copies, int) or total_copies < 0:
-                return False
-            book["total_copies"] = total_copies
-        if title is not None:
-            book["title"] = title.strip()
-        if author is not None:
-            book["author"] = author.strip()
-        if genre is not None:
-            book["genre"] = genre
-        if current_user:
-            log_event(current_user["username"], f"Updated book: {isbn}")
-        return True
-    except Exception as e:
-        log_error(str(e))
+    """Updates existing book details."""
+    if isbn not in books:
         return False
+    if title:
+        books[isbn]["title"] = title
+    if author:
+        books[isbn]["author"] = author
+    if genre:
+        books[isbn]["genre"] = genre
+    if total_copies is not None:
+        difference = total_copies - books[isbn]["total_copies"]
+        books[isbn]["total_copies"] = total_copies
+        books[isbn]["available_copies"] += difference
+        if books[isbn]["available_copies"] < 0:
+            books[isbn]["available_copies"] = 0
+    return True
 
 
 def delete_book(isbn):
-    """
-    Deletes a book only if it exists and is not currently borrowed by anyone.
-    """
-    try:
-        if isbn not in books:
-            return False
-        for member in members:
-            if isbn in member["borrowed_books"]:
-                return False
-        title = books[isbn]["title"]
+    """Deletes a book record from the system."""
+    if isbn in books:
         del books[isbn]
-        if current_user:
-            log_event(current_user["username"], f"Deleted book: {title} (ISBN: {isbn})")
         return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-# ==============================
-# Member Operations
-# ==============================
-
-def add_member(member_id, name, email):
-    """
-    Adds a new member to the library.
-    Before adding, I checked that:
-      - The ID is unique
-      - The email format is valid
-      - The email is not already used by another member
-    """
-    try:
-        if not member_id or not name or not email:
-            return False
-        if _find_member(member_id):
-            return False
-        if not _is_valid_email(email):
-            return False
-        for existing_member in members:
-            if existing_member["email"].strip().lower() == email.strip().lower():
-                return False
-        new_member = {
-            "member_id": member_id,
-            "name": name.strip(),
-            "email": email.strip(),
-            "borrowed_books": []
-        }
-        members.append(new_member)
-        if current_user:
-            log_event(current_user["username"], f"Added member: {name} (ID: {member_id})")
-        return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-def update_member(member_id, name=None, email=None):
-    """
-    Updates an existing member's details.
-    I made sure emails are validated and not duplicated for other members.
-    """
-    try:
-        member = _find_member(member_id)
-        if not member:
-            return False
-        if email is not None:
-            if not _is_valid_email(email):
-                return False
-            for other_member in members:
-                if other_member["member_id"] != member_id and other_member["email"].strip().lower() == email.strip().lower():
-                    return False
-            member["email"] = email.strip()
-        if name is not None:
-            member["name"] = name.strip()
-        if current_user:
-            log_event(current_user["username"], f"Updated member: {member_id}")
-        return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-def delete_member(member_id):
-    """
-    Deletes a member only if they exist and currently have no borrowed books.
-    """
-    try:
-        member = _find_member(member_id)
-        if not member:
-            return False
-        if member["borrowed_books"]:
-            return False
-        members.remove(member)
-        if current_user:
-            log_event(current_user["username"], f"Deleted member: {member_id}")
-        return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-# ==============================
-# Borrowing and Returning
-# ==============================
-
-def borrow_book(isbn, member_id):
-    """
-    Allows a member to borrow a book if:
-      - The book exists and is available
-      - The member exists
-      - The member has borrowed less than 3 books
-    """
-    try:
-        book = books.get(isbn)
-        if not book:
-            return False
-        if book["total_copies"] <= 0:
-            return False
-        member = _find_member(member_id)
-        if not member:
-            return False
-        if len(member["borrowed_books"]) >= 3:
-            return False
-        if isbn in member["borrowed_books"]:
-            return False
-        book["total_copies"] -= 1
-        member["borrowed_books"].append(isbn)
-        if current_user:
-            log_event(current_user["username"], f"Borrowed book: {book['title']} (ISBN: {isbn}) for member {member_id}")
-        return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-def return_book(isbn, member_id):
-    """
-    Allows a member to return a borrowed book.
-    Once returned, total_copies increases and the book is removed from their borrowed list.
-    """
-    try:
-        book = books.get(isbn)
-        if not book:
-            return False
-        member = _find_member(member_id)
-        if not member:
-            return False
-        if isbn not in member["borrowed_books"]:
-            return False
-        member["borrowed_books"].remove(isbn)
-        book["total_copies"] += 1
-        if current_user:
-            log_event(current_user["username"], f"Returned book: {book['title']} (ISBN: {isbn}) by member {member_id}")
-        return True
-    except Exception as e:
-        log_error(str(e))
-        return False
-
-
-# ==============================
-# Utility Functions
-# ==============================
-
-def system_summary():
-    """
-    Displays a short summary of the system including:
-    - Total books
-    - Total members
-    - Total borrowed copies
-    """
-    total_books = len(books)
-    total_members = len(members)
-    total_borrowed = sum(len(member["borrowed_books"]) for member in members)
-    print("\n=== System Summary ===")
-    print(f"Total distinct books: {total_books}")
-    print(f"Total members: {total_members}")
-    print(f"Total borrowed copies (across members): {total_borrowed}")
-    print("======================\n")
+    return False
 
 
 def pretty_print_books():
-    """
-    Prints out all the books in a readable format.
-    Each book record shows title, author, genre, and available copies.
-    """
+    """Prints all books in a table-like format."""
     if not books:
         print("No books in the system.")
         return
-    print("\n=== Books ===")
-    for isbn, book in books.items():
-        print(f"ISBN: {isbn} | Title: {book['title']} | Author: {book['author']} | Genre: {book['genre']} | Available copies: {book['total_copies']}")
-    print("=============\n")
+    print("\n=== List of Books ===")
+    print("{:<15} {:<35} {:<25} {:<15} {:<10}".format(
+        "ISBN", "Title", "Author", "Genre", "Available"
+    ))
+    print("-" * 105)
+    for book_id, info in books.items():
+        print("{:<15} {:<35} {:<25} {:<15} {:<10}".format(
+            book_id, info["title"], info["author"], info["genre"], info["available_copies"]
+        ))
+
+
+# ==============================
+# Member Management Functions
+# ==============================
+
+def add_member(member_id, name, email):
+    """Adds a new library member."""
+    if member_id in members:
+        return False
+    members[member_id] = {"name": name, "email": email, "borrowed_books": []}
+    return True
+
+
+def update_member(member_id, name=None, email=None):
+    """Updates member information."""
+    if member_id not in members:
+        return False
+    if name:
+        members[member_id]["name"] = name
+    if email:
+        members[member_id]["email"] = email
+    return True
+
+
+def delete_member(member_id):
+    """Deletes a member from the system."""
+    if member_id in members:
+        del members[member_id]
+        return True
+    return False
 
 
 def pretty_print_members():
-    """
-    Prints out all members in the system.
-    Each member’s borrowed books are also shown.
-    """
+    """Displays all members in a neat table."""
     if not members:
-        print("No members in the system.")
+        print("No members found.")
         return
-    print("\n=== Members ===")
-    for member in members:
-        print(f"ID: {member['member_id']} | Name: {member['name']} | Email: {member['email']} | Borrowed: {member['borrowed_books']}")
-    print("================\n")
+    print("\n=== List of Members ===")
+    print("{:<10} {:<30} {:<35} {:<15}".format(
+        "ID", "Name", "Email", "Borrowed"
+    ))
+    print("-" * 100)
+    for member_id, info in members.items():
+        borrowed = len(info["borrowed_books"])
+        print("{:<10} {:<30} {:<35} {:<15}".format(
+            member_id, info["name"], info["email"], borrowed
+        ))
+
+
+# ==============================
+# Borrow and Return Functions
+# ==============================
+
+def borrow_book(isbn, member_id):
+    """Allows a member to borrow a book."""
+    if isbn not in books or member_id not in members:
+        return False
+    if books[isbn]["available_copies"] <= 0:
+        return False
+    if isbn in members[member_id]["borrowed_books"]:
+        return False
+
+    books[isbn]["available_copies"] -= 1
+    members[member_id]["borrowed_books"].append(isbn)
+    return True
+
+
+def return_book(isbn, member_id):
+    """Allows a member to return a borrowed book."""
+    if isbn not in books or member_id not in members:
+        return False
+    if isbn not in members[member_id]["borrowed_books"]:
+        return False
+
+    books[isbn]["available_copies"] += 1
+    members[member_id]["borrowed_books"].remove(isbn)
+    return True
+
+
+# ==============================
+# System Summary
+# ==============================
+
+def system_summary():
+    """Displays a summary of total books, members, and borrowed books."""
+    total_books = len(books)
+    total_members = len(members)
+    borrowed_books = sum(
+        len(member["borrowed_books"]) for member in members.values()
+    )
+
+    print("\n=== System Summary ===")
+    print(f"Total Books: {total_books}")
+    print(f"Total Members: {total_members}")
+    print(f"Total Books Borrowed: {borrowed_books}")
+
+
+# ==============================
+# Preloaded Data for Demonstration
+# ==============================
+
+# Preloaded Books
+sample_books = [
+    ("91", "Harry Potter and the Goblet of Fire", "J.K. Rowling", "Fantasy", 10),
+    ("92", "The Odyssey", "Homer", "Epic", 5),
+    ("93", "To Kill a Mockingbird", "Harper Lee", "Fiction", 8),
+    ("94", "The Kite Runner", "Khaled Hosseini", "Drama", 6),
+    ("95", "The Great Gatsby", "F. Scott Fitzgerald", "Classic", 7),
+    ("96", "Fahrenheit 451", "Ray Bradbury", "Science Fiction", 9),
+    ("97", "Dune", "Frank Herbert", "Sci-Fi", 12),
+    ("98", "The Catcher in the Rye", "J.D. Salinger", "Classic", 5),
+    ("99", "It Ends With Us", "Colleen Hoover", "Romance", 10),
+    ("100", "Harry Potter and the Deathly Hallows", "J.K. Rowling", "Fantasy", 11)
+]
+
+for isbn, title, author, genre, copies in sample_books:
+    if isbn not in books:
+        books[isbn] = {
+            "title": title,
+            "author": author,
+            "genre": genre,
+            "total_copies": copies,
+            "available_copies": copies
+        }
+
+# Preloaded Members
+sample_members = [
+    ("M001", "Joshua Mohamed Katibi Yaffa", "joshua.yaffa@example.com"),
+    ("M002", "Sarah Conteh", "sarah.conteh@example.com"),
+    ("M003", "Mohamed Kamara", "mohamed.kamara@example.com"),
+    ("M004", "Abigail Koroma", "abigail.koroma@example.com"),
+    ("M005", "David Sesay", "david.sesay@example.com"),
+    ("M006", "Fatmata Jalloh", "fatmata.jalloh@example.com"),
+    ("M007", "Josephine Mansaray", "josephine.mansaray@example.com"),
+    ("M008", "Alhassan Bangura", "alhassan.bangura@example.com"),
+    ("M009", "Mariatu Kargbo", "mariatu.kargbo@example.com"),
+    ("M010", "Isata Conteh", "isata.conteh@example.com")
+]
+
+for member_id, name, email in sample_members:
+    if member_id not in members:
+        members[member_id] = {
+            "name": name,
+            "email": email,
+            "borrowed_books": []
+        }
