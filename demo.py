@@ -14,14 +14,14 @@
 # ================================================
 
 """
-This is the main program file that runs my Mini Library Management System.
-It connects all the functions from operations.py and security.py to create
-a working system that supports authentication, user roles, and full CRUD operations.
+This is the main entry point of the ReadEasy Mini Library Management System.
+It integrates the operations and security modules, providing a role-based
+menu for Admins, Staff, and Members.
 """
 
 import security
 from operations import (
-    add_book, search_books, update_book, delete_book,
+    add_book, update_book, delete_book, search_books,
     add_member, update_member, delete_member,
     borrow_book, return_book,
     pretty_print_books, pretty_print_members, system_summary
@@ -29,14 +29,11 @@ from operations import (
 
 
 # ==============================
-# Menu Functions
+# ADMIN MENU
 # ==============================
 
 def admin_menu():
-    """
-    Displays all available actions for an admin user.
-    Admins have full access to manage books, members, and system logs.
-    """
+    """Displays available actions for admin users."""
     while True:
         print("\n=== ADMIN MENU ===")
         print("1. Add Book")
@@ -72,7 +69,7 @@ def admin_menu():
                 print("Failed to add book. Check inputs or duplicates.")
 
         elif choice == "2":
-            isbn = input("Enter ISBN of book to update: ")
+            isbn = input("Enter ISBN to update: ")
             title = input("New Title (leave blank to skip): ") or None
             author = input("New Author (leave blank to skip): ") or None
             genre = input("New Genre (leave blank to skip): ") or None
@@ -81,14 +78,14 @@ def admin_menu():
             if update_book(isbn, title, author, genre, total_copies):
                 print("Book updated successfully.")
             else:
-                print("Failed to update book. Please check ISBN or inputs.")
+                print("Book not found or invalid details.")
 
         elif choice == "3":
-            isbn = input("Enter ISBN of book to delete: ")
+            isbn = input("Enter ISBN to delete: ")
             if delete_book(isbn):
                 print("Book deleted successfully.")
             else:
-                print("Failed to delete book. It might be borrowed or not exist.")
+                print("Failed to delete book. It might not exist.")
 
         elif choice == "4":
             member_id = input("Enter Member ID: ")
@@ -106,14 +103,14 @@ def admin_menu():
             if update_member(member_id, name, email):
                 print("Member updated successfully.")
             else:
-                print("Failed to update member. Please check inputs.")
+                print("Member not found or invalid details.")
 
         elif choice == "6":
             member_id = input("Enter Member ID to delete: ")
             if delete_member(member_id):
                 print("Member deleted successfully.")
             else:
-                print("Failed to delete member. They might have borrowed books or not exist.")
+                print("Failed to delete member. They may not exist or have borrowed books.")
 
         elif choice == "7":
             pretty_print_books()
@@ -135,7 +132,7 @@ def admin_menu():
             if return_book(isbn, member_id):
                 print("Book returned successfully.")
             else:
-                print("Return failed. Verify ISBN and member.")
+                print("Return failed. Verify details.")
 
         elif choice == "11":
             system_summary()
@@ -154,11 +151,12 @@ def admin_menu():
             print("Invalid choice. Try again.")
 
 
+# ==============================
+# STAFF MENU
+# ==============================
+
 def staff_menu():
-    """
-    Displays available actions for staff users.
-    Staff can manage borrowing and returning but cannot view or delete logs.
-    """
+    """Displays options available for staff users."""
     while True:
         print("\n=== STAFF MENU ===")
         print("1. View All Books")
@@ -172,46 +170,75 @@ def staff_menu():
 
         if choice == "1":
             pretty_print_books()
-
         elif choice == "2":
             pretty_print_members()
-
         elif choice == "3":
             isbn = input("Enter ISBN: ")
             member_id = input("Enter Member ID: ")
             if borrow_book(isbn, member_id):
                 print("Book borrowed successfully.")
             else:
-                print("Borrowing failed. Check book or member details.")
-
+                print("Borrowing failed. Please check the details.")
         elif choice == "4":
             isbn = input("Enter ISBN: ")
             member_id = input("Enter Member ID: ")
             if return_book(isbn, member_id):
                 print("Book returned successfully.")
             else:
-                print("Return failed. Verify ISBN and member.")
-
+                print("Return failed. Verify details.")
         elif choice == "5":
             system_summary()
-
         elif choice == "0":
             security.logout()
             break
-
         else:
             print("Invalid choice. Try again.")
 
 
 # ==============================
-# Program Entry Point
+# MEMBER MENU
+# ==============================
+
+def member_menu():
+    """Displays limited actions available to library members."""
+    while True:
+        print("\n=== MEMBER MENU ===")
+        print("1. View All Books")
+        print("2. Borrow Book")
+        print("3. Return Book")
+        print("0. Logout")
+
+        choice = input("Enter your choice: ").strip()
+
+        if choice == "1":
+            pretty_print_books()
+        elif choice == "2":
+            isbn = input("Enter ISBN: ")
+            member_id = input("Enter your Member ID: ")
+            if borrow_book(isbn, member_id):
+                print("Book borrowed successfully.")
+            else:
+                print("Borrowing failed. Please check details or availability.")
+        elif choice == "3":
+            isbn = input("Enter ISBN: ")
+            member_id = input("Enter your Member ID: ")
+            if return_book(isbn, member_id):
+                print("Book returned successfully.")
+            else:
+                print("Return failed. Please verify details.")
+        elif choice == "0":
+            security.logout()
+            break
+        else:
+            print("Invalid choice. Try again.")
+
+
+# ==============================
+# MAIN PROGRAM ENTRY
 # ==============================
 
 def main():
-    """
-    Main entry point of the system.
-    It first authenticates a user and then shows the menu based on their role.
-    """
+    """Main entry point for the system."""
     print("=====================================")
     print(" Welcome to ReadEasy Library System ")
     print("=====================================")
@@ -223,12 +250,14 @@ def main():
         admin_menu()
     elif security.current_user["role"] == "staff":
         staff_menu()
+    elif security.current_user["role"] == "member":
+        member_menu()
 
     print("\nThank you for using the ReadEasy Mini Library Management System.")
 
 
 # ==============================
-# Program Execution
+# EXECUTION
 # ==============================
 
 if __name__ == "__main__":
