@@ -14,9 +14,9 @@
 # ================================================
 
 """
-This file handles all the security and audit features of my Mini Library Management System.
-It manages user authentication, roles, logging, and audit trails.
-All user actions such as login, logout, and system updates are recorded with date and time.
+This module handles all security and audit-related operations for the system.
+It manages user authentication, roles, login tracking, and audit logs.
+All logins, logouts, and major system actions are recorded with timestamps.
 """
 
 import datetime
@@ -26,15 +26,13 @@ import os
 # Global Variables
 # ==============================
 
-# This variable stores the currently logged-in user information
-current_user = None
+current_user = None  # Stores currently logged-in user details
 
-# The folder where log files are stored
+# Directory for storing logs
 LOG_FOLDER = "logs"
 if not os.path.exists(LOG_FOLDER):
     os.makedirs(LOG_FOLDER)
 
-# File paths for logs
 AUDIT_LOG_FILE = os.path.join(LOG_FOLDER, "audit_log.txt")
 ERROR_LOG_FILE = os.path.join(LOG_FOLDER, "error_log.txt")
 
@@ -42,8 +40,6 @@ ERROR_LOG_FILE = os.path.join(LOG_FOLDER, "error_log.txt")
 # Predefined Users and Roles
 # ==============================
 
-# For this system, I created two user roles: admin and staff.
-# Each user is represented by a dictionary containing username, password, and role.
 USERS = {
     "admin": {"password": "admin123", "role": "admin"},
     "staff": {"password": "staff123", "role": "staff"}
@@ -55,59 +51,79 @@ USERS = {
 # ==============================
 
 def log_event(username, action):
-    """
-    Records every significant system event in the audit log file.
-    Each entry includes the username, the action performed, and the timestamp.
-    """
+    """Records a user action into the audit log with timestamp."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(AUDIT_LOG_FILE, "a", encoding="utf-8") as log_file:
         log_file.write(f"[{timestamp}] USER: {username} - ACTION: {action}\n")
 
 
 def log_error(message):
-    """
-    Records system errors or exceptions into a separate error log file.
-    """
+    """Records any system error or exception."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     with open(ERROR_LOG_FILE, "a", encoding="utf-8") as log_file:
         log_file.write(f"[{timestamp}] ERROR: {message}\n")
 
 
 # ==============================
-# Authentication Functions
+# Authentication System
 # ==============================
 
 def authenticate():
     """
-    Handles user login.
-    A user has three attempts to enter the correct username and password.
-    After a successful login, user details are stored in the global variable current_user.
+    Handles user login for Admin, Staff, and Members.
+    Admin and Staff must provide username and password.
+    Members can log in using only their name.
     """
     global current_user
 
-    print("=== Login Required ===")
+    print("=== Select Role ===")
+    print("1. Admin")
+    print("2. Staff")
+    print("3. Member")
+
+    role_choice = input("Enter your choice (1/2/3): ").strip()
+
+    if role_choice == "1":
+        role = "admin"
+    elif role_choice == "2":
+        role = "staff"
+    elif role_choice == "3":
+        role = "member"
+    else:
+        print("Invalid selection.")
+        return False
+
+    # Member login (name only)
+    if role == "member":
+        username = input("Enter your name: ").strip()
+        if not username:
+            print("Invalid name. Please try again.")
+            return False
+        current_user = {"username": username, "role": role}
+        log_event(username, "Logged in as member")
+        print(f"Welcome, {username}! Role: Member")
+        return True
+
+    # Admin or Staff login (with password)
+    print(f"=== Login as {role.capitalize()} ===")
     for attempt in range(3):
         username = input("Enter username: ").strip()
         password = input("Enter password: ").strip()
 
-        if username in USERS and USERS[username]["password"] == password:
-            role = USERS[username]["role"]
+        if username in USERS and USERS[username]["password"] == password and USERS[username]["role"] == role:
             current_user = {"username": username, "role": role}
-            log_event(username, "Logged in successfully")
+            log_event(username, f"Logged in successfully as {role}")
             print(f"Welcome, {username}! Role: {role.capitalize()}")
             return True
         else:
-            print("Invalid username or password. Try again.")
+            print("Invalid credentials. Try again.")
 
     print("Too many failed attempts. Exiting system.")
     return False
 
 
 def logout():
-    """
-    Handles user logout.
-    The event is also recorded in the audit trail with timestamp.
-    """
+    """Handles user logout and logs it in the audit trail."""
     global current_user
     if current_user:
         username = current_user["username"]
@@ -119,13 +135,13 @@ def logout():
 
 
 # ==============================
-# Role-Based Access Control
+# Access Control
 # ==============================
 
 def has_access(required_role):
     """
-    Checks if the currently logged-in user has the required role.
-    Returns True if authorized, otherwise False.
+    Checks if the current user has permission to perform a specific action.
+    Admins have full access; staff and members are restricted.
     """
     if not current_user:
         print("Access denied. Please log in first.")
@@ -140,16 +156,13 @@ def has_access(required_role):
 
 
 # ==============================
-# Utility Function for Viewing Logs
+# Log Viewing Functions (Admin Only)
 # ==============================
 
 def view_audit_log():
-    """
-    Allows an admin user to view the audit trail file directly from the system.
-    """
+    """Allows admin to view the system audit trail."""
     if not has_access("admin"):
         return
-
     print("\n=== Audit Log ===")
     try:
         with open(AUDIT_LOG_FILE, "r", encoding="utf-8") as log_file:
@@ -159,16 +172,13 @@ def view_audit_log():
             else:
                 print("No audit logs recorded yet.")
     except FileNotFoundError:
-        print("No audit log file found.")
+        print("Audit log file not found.")
 
 
 def view_error_log():
-    """
-    Allows an admin user to view all recorded errors.
-    """
+    """Allows admin to view all recorded errors."""
     if not has_access("admin"):
         return
-
     print("\n=== Error Log ===")
     try:
         with open(ERROR_LOG_FILE, "r", encoding="utf-8") as log_file:
@@ -178,11 +188,11 @@ def view_error_log():
             else:
                 print("No errors logged yet.")
     except FileNotFoundError:
-        print("No error log file found.")
+        print("Error log file not found.")
 
 
 # ==============================
-# Test Section (Optional)
+# Module Test Section (Optional)
 # ==============================
 
 if __name__ == "__main__":
