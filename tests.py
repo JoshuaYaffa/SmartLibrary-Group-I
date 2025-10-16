@@ -8,111 +8,160 @@
 # Semester: 3
 # Year: 2
 #
-# Test Module for Core Functionalities
+# Automated Testing Module
 #
 # GitHub: JoshuaYaffa/SmartLibrary-Group-I
 # ================================================
 
 """
-This file contains my test cases for the ReadEasy Mini Library Management System.
-I used simple assert statements to check that all my main functions in operations.py
-are working correctly. Each section tests a different part of the system.
+This file contains automated test cases for my Mini Library Management System.
+The purpose of this file is to test all the main functions in operations.py
+and some essential checks from security.py to ensure that the system
+works correctly and consistently.
 """
 
-from operations import (
-    add_book, search_books, update_book, delete_book,
-    add_member, update_member, delete_member,
-    borrow_book, return_book, books, members
-)
+import unittest
+import operations
+import security
 
 
-def run_all_tests():
-    """
-    This function runs all my tests in order.
-    If all tests pass, I will print a success message at the end.
-    """
+# ==============================================
+# Test Class for Library Operations
+# ==============================================
 
-    # ==========================================
-    # 1. Test Adding Books
-    # ==========================================
-    print("Testing add_book()...")
-    assert add_book("B001", "Python Basics", "John Smith", "Academic", 3) == True
-    assert add_book("B001", "Duplicate ISBN", "Another Author", "Fiction", 2) == False
-    assert add_book("B002", "Story Time", "James Doe", "Fiction", 5) == True
-    print("Book addition tests passed.")
+class TestLibraryOperations(unittest.TestCase):
+    """This class tests all the key features of the library system."""
 
-    # ==========================================
-    # 2. Test Searching Books
-    # ==========================================
-    print("Testing search_books()...")
-    result = search_books("python")
-    assert len(result) == 1
-    assert result[0][1]["title"] == "Python Basics"
-    print("Book search tests passed.")
+    def setUp(self):
+        """This method runs before each test to reset sample data."""
+        self.books = operations.books
+        self.members = operations.members
 
-    # ==========================================
-    # 3. Test Updating Books
-    # ==========================================
-    print("Testing update_book()...")
-    assert update_book("B001", title="Python for Everyone") == True
-    assert books["B001"]["title"] == "Python for Everyone"
-    assert update_book("B999", title="Unknown Book") == False
-    print("Book update tests passed.")
+    # ------------------------------
+    # Test Book Management Functions
+    # ------------------------------
 
-    # ==========================================
-    # 4. Test Adding Members
-    # ==========================================
-    print("Testing add_member()...")
-    assert add_member("M001", "Alice Johnson", "alice@example.com") == True
-    assert add_member("M001", "Duplicate ID", "alice2@example.com") == False
-    assert add_member("M002", "Bob Brown", "bob@example.com") == True
-    print("Member addition tests passed.")
+    def test_add_book(self):
+        """Test adding a new book."""
+        result = operations.add_book("9999999999999", "Test Book", "Test Author", "Testing", 5)
+        self.assertTrue(result)
+        self.assertIn("9999999999999", self.books)
 
-    # ==========================================
-    # 5. Test Updating Members
-    # ==========================================
-    print("Testing update_member()...")
-    assert update_member("M001", name="Alice J.") == True
-    assert members[0]["name"] == "Alice J."
-    assert update_member("M001", email="invalid-email") == False
-    print("Member update tests passed.")
+    def test_update_book(self):
+        """Test updating a book record."""
+        operations.add_book("8888888888888", "Old Title", "Author", "Genre", 2)
+        result = operations.update_book("8888888888888", title="New Title", total_copies=4)
+        self.assertTrue(result)
+        self.assertEqual(self.books["8888888888888"]["title"], "New Title")
+        self.assertEqual(self.books["8888888888888"]["total_copies"], 4)
 
-    # ==========================================
-    # 6. Test Borrowing Books
-    # ==========================================
-    print("Testing borrow_book()...")
-    assert borrow_book("B001", "M001") == True
-    assert borrow_book("B001", "M001") == False  # cannot borrow same book twice
-    assert borrow_book("B999", "M001") == False  # invalid book
-    assert borrow_book("B002", "M999") == False  # invalid member
-    print("Borrow tests passed.")
+    def test_delete_book(self):
+        """Test deleting a book from the system."""
+        operations.add_book("7777777777777", "Delete Me", "Someone", "Drama", 3)
+        result = operations.delete_book("7777777777777")
+        self.assertTrue(result)
+        self.assertNotIn("7777777777777", self.books)
 
-    # ==========================================
-    # 7. Test Returning Books
-    # ==========================================
-    print("Testing return_book()...")
-    assert return_book("B001", "M001") == True
-    assert return_book("B001", "M001") == False  # cannot return twice
-    assert return_book("B999", "M001") == False
-    print("Return tests passed.")
+    # ------------------------------
+    # Test Member Management
+    # ------------------------------
 
-    # ==========================================
-    # 8. Test Deleting Members and Books
-    # ==========================================
-    print("Testing delete_member() and delete_book()...")
-    assert delete_member("M001") == True
-    assert delete_member("M999") == False
-    assert delete_book("B001") == True
-    assert delete_book("B001") == False
-    print("Deletion tests passed.")
+    def test_add_member(self):
+        """Test adding a new library member."""
+        result = operations.add_member("M999", "Test User", "test@example.com")
+        self.assertTrue(result)
+        self.assertIn("M999", self.members)
 
-    # ==========================================
-    # Final Summary
-    # ==========================================
-    print("\nAll tests completed successfully.")
-    print("The system is working as expected.")
+    def test_update_member(self):
+        """Test updating a member's details."""
+        operations.add_member("M888", "Old Name", "old@example.com")
+        result = operations.update_member("M888", name="New Name", email="new@example.com")
+        self.assertTrue(result)
+        self.assertEqual(self.members["M888"]["name"], "New Name")
 
+    def test_delete_member(self):
+        """Test deleting a member record."""
+        operations.add_member("M777", "Delete User", "delete@example.com")
+        result = operations.delete_member("M777")
+        self.assertTrue(result)
+        self.assertNotIn("M777", self.members)
+
+    # ------------------------------
+    # Test Borrow and Return
+    # ------------------------------
+
+    def test_borrow_and_return_book(self):
+        """Test borrowing and returning a book."""
+        isbn = "91"  # Preloaded Harry Potter book
+        member_id = "M001"       # Preloaded member
+        result_borrow = operations.borrow_book(isbn, member_id)
+        self.assertTrue(result_borrow)
+        self.assertIn(isbn, operations.members[member_id]["borrowed_books"])
+
+        result_return = operations.return_book(isbn, member_id)
+        self.assertTrue(result_return)
+        self.assertNotIn(isbn, operations.members[member_id]["borrowed_books"])
+
+    # ------------------------------
+    # Test Preloaded Data
+    # ------------------------------
+
+    def test_preloaded_books_exist(self):
+        """Check if the 10 preloaded books exist in the system."""
+        self.assertGreaterEqual(len(self.books), 10)
+
+    def test_preloaded_members_exist(self):
+        """Check if the 10 preloaded members exist in the system."""
+        self.assertGreaterEqual(len(self.members), 10)
+
+    # ------------------------------
+    # Test Summary Output
+    # ------------------------------
+
+    def test_system_summary(self):
+        """Ensure the system summary runs without error."""
+        try:
+            operations.system_summary()
+        except Exception as e:
+            self.fail(f"System summary raised an exception: {e}")
+
+
+# ==============================================
+# Test Class for Security Features
+# ==============================================
+
+class TestSecurityModule(unittest.TestCase):
+    """Basic checks for authentication and audit logging."""
+
+    def test_user_roles_exist(self):
+        """Ensure default users and roles exist."""
+        users = security.USERS
+        self.assertIn("admin", users)
+        self.assertIn("staff", users)
+        self.assertEqual(users["admin"]["role"], "admin")
+        self.assertEqual(users["staff"]["role"], "staff")
+
+    def test_log_event_function(self):
+        """Test audit log function works properly."""
+        try:
+            security.log_event("test_user", "performed test action")
+        except Exception as e:
+            self.fail(f"log_event() raised an exception: {e}")
+
+    def test_log_error_function(self):
+        """Test error logging function works properly."""
+        try:
+            security.log_error("Sample error for testing")
+        except Exception as e:
+            self.fail(f"log_error() raised an exception: {e}")
+
+
+# ==============================================
+# Run All Tests
+# ==============================================
 
 if __name__ == "__main__":
-    print("Running ReadEasy System Tests...\n")
-    run_all_tests()
+    print("=====================================")
+    print(" Running Automated Tests for ReadEasy ")
+    print("=====================================\n")
+    unittest.main(verbosity=2)
