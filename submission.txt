@@ -1,10 +1,112 @@
-Repository URL: https://github.com/JoshuaYaffa/SmartLibrary-Group-I.git
-Tag Name: week4-submission
-Submitted Files:
-- operations.py
-- tests.py
-- demo.py
-- README.md
-- UML.pdf
-- DesignRationale.pdf
-- submission.txt 
+
+SUBMISSION FILE - PROG211 INDIVIDUAL ASSIGNMENT
+
+
+PROJECT TITLE:
+ReadEasy Mini Library Management System
+
+STUDENT INFORMATION:
+Name: Joshua Mohamed Katibi Yaffa
+Student ID: 905004075
+Class: BSEM1101
+DueDate:week4
+Semester: 3
+Year: 2
+Course: Object-Oriented Programming (OOP)
+Institution: Limkokwing University of Creative Technology, Sierra Leone
+
+GITHUB REPOSITORY:
+https://github.com/JoshuaYaffa/SmartLibrary-Group-I
+
+-----------------------------------------
+PROJECT DESCRIPTION:
+-----------------------------------------
+The ReadEasy Mini Library Management System is a Python-based console application designed to demonstrate Object-Oriented Programming (OOP) concepts.
+
+It allows users to manage library operations such as:
+- Adding, updating, and deleting books and members
+- Borrowing and returning books
+- Viewing all books and members
+- Generating system summaries
+- Logging user activities and errors automatically
+
+The system supports three user roles:
+1. Admin — Full access to all system functions
+2. Staff — Limited access for borrowing and returning books
+3. Member — Can only view, borrow, and return books
+
+-----------------------------------------
+OBJECT-ORIENTED PROGRAMMING PRINCIPLES:
+-----------------------------------------
+- Encapsulation: Grouping related data and methods in modules
+- Abstraction: Simplified interface via role-based menus
+- Modularity: Functions separated across multiple files
+- Reusability: Functions reused for similar operations
+
+-----------------------------------------
+MAIN SYSTEM FILES:
+-----------------------------------------
+1. demo.py  — Main program (menu and interaction)
+2. operations.py  — Core library operations
+3. security.py  — Handles authentication, audit and error logging
+4. tests.py  — Automated unit tests
+5. logs/ — Folder containing:
+   - audit_log.txt (activity log)
+   - error_log.txt (error log)
+6. README.md — Full project documentation
+7. ReadEasy_Run_Instructions.txt — Step-by-step instructions
+8. submission.txt — Submission summary document
+
+-----------------------------------------
+LOGIN DETAILS:
+-----------------------------------------
+Admin:
+  Username: admin
+  Password: admin123
+
+Staff:
+  Username: staff
+  Password: staff123
+
+Member:
+  Login using your name only (no password required) Eg. Joshua
+
+-----------------------------------------
+HOW TO RUN THE SYSTEM:
+-----------------------------------------
+1. Open Command Prompt and navigate to the project folder:
+   cd "C:\Users\JOSHUA M K YAFFA\SmartLibrary-Group-I"
+
+2. Run the main program:
+   python demo.py
+
+3. Choose a role and log in using the credentials above.
+
+4. Perform operations according to your role (add books, view members, borrow or return books).
+
+5. View logs for all system activities inside the 'logs' folder.
+
+-----------------------------------------
+AUTOMATED TESTS:
+-----------------------------------------
+To verify all system functions:
+   python tests.py
+
+Expected output:
+   Ran all tests successfully
+   OK
+
+-----------------------------------------
+SYSTEM SUMMARY:
+-----------------------------------------
+The ReadEasy system integrates three modules (security, operations, and main interface)
+and demonstrates secure authentication, logging, and modular programming in Python.
+
+-----------------------------------------
+AUTHOR:
+-----------------------------------------
+Developed by: Joshua Mohamed Katibi Yaffa
+Year: 2025
+Limkokwing University of Creative Technology, Sierra Leone
+
+
