@@ -1,0 +1,2 @@
+[2025-10-18 20:11:05] ERROR: Sample error for testing
+[2025-10-21 10:50:09] ERROR: Sample error for testing
