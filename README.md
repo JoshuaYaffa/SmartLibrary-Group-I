@@ -46,7 +46,7 @@ Role       Username    Password
 --------------------------------
 Admin      admin       admin123
 Staff      staff       staff123
-Member     (Name only) No password required
+Member     (Name only) No password required Eg joshua
 
 Example for Admin:
 Enter your choice (1/2/3): 1
